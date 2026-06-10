@@ -1,0 +1,30 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-brand-50: #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-400: #2dd4bf;
+  --color-brand-500: #14b8a6;
+  --color-brand-600: #0d9488;
+  --color-brand-700: #0f766e;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-slate-950 text-slate-100 antialiased;
+}
+
+@layer components {
+  .input {
+    @apply mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none focus:border-brand-500;
+  }
+  .checkbox {
+    @apply h-4 w-4 rounded border-slate-600 bg-slate-950 text-brand-600 focus:ring-brand-500;
+  }
+  .btn-secondary {
+    @apply rounded-md border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800 disabled:opacity-60;
+  }
+}

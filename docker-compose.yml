@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-watcher}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-watcher}
+      POSTGRES_DB: ${POSTGRES_DB:-watcher}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-watcher} -d ${POSTGRES_DB:-watcher}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Exposed for local `npm run dev` against the container DB.
+    # Override DB_PORT if 5432 is already used on your host.
+    ports:
+      - '${DB_PORT:-5432}:5432'
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NUXT_DATABASE_URL: postgres://${POSTGRES_USER:-watcher}:${POSTGRES_PASSWORD:-watcher}@db:5432/${POSTGRES_DB:-watcher}
+      NUXT_AUTH_USERNAME: ${NUXT_AUTH_USERNAME:-admin}
+      NUXT_AUTH_PASSWORD: ${NUXT_AUTH_PASSWORD:-admin}
+      NUXT_SESSION_PASSWORD: ${NUXT_SESSION_PASSWORD:-please-change-me-to-a-long-random-string-min-32}
+      NUXT_KLAZ_API_KEY: ${NUXT_KLAZ_API_KEY:-}
+    # Override APP_PORT if 3000 is already used on your host.
+    ports:
+      - '${APP_PORT:-3000}:3000'
+
+volumes:
+  pgdata:
