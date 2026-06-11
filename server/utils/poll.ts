@@ -108,12 +108,15 @@ export async function runSearch(searchId: string): Promise<RunResult> {
     for (const ad of matched) {
       seenAdIds.add(ad.ad_id)
       const price = toCents(ad)
-      if (price != null) prices.push(price)
 
-      const existing = await client.query<{ id: string; current_price: number | null }>(
-        'SELECT id, current_price FROM ads WHERE search_id = $1 AND ad_id = $2',
+      const existing = await client.query<{ id: string; current_price: number | null; excluded: boolean }>(
+        'SELECT id, current_price, excluded FROM ads WHERE search_id = $1 AND ad_id = $2',
         [search.id, ad.ad_id],
       )
+
+      // Manually excluded ads stay tracked but never count toward the statistics.
+      const isExcluded = existing.rows[0]?.excluded ?? false
+      if (price != null && !isExcluded) prices.push(price)
 
       const imageUrl = ad.images?.[0] ?? null
       const postedAt = ad.created_at ?? null

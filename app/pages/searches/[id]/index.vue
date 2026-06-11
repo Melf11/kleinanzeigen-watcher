@@ -36,11 +36,24 @@ async function remove() {
 const search = computed(() => detail.value?.search)
 const latest = computed(() => detail.value?.latestRun)
 const previous = computed(() => detail.value?.previousRun)
+const live = computed(() => detail.value?.liveStats)
+const liveMedian = computed(() =>
+  live.value?.price_median != null ? Math.round(live.value.price_median) : null,
+)
 
 const medianDelta = computed(() => {
-  if (!latest.value?.price_median || !previous.value?.price_median) return null
-  return latest.value.price_median - previous.value.price_median
+  if (liveMedian.value == null || previous.value?.price_median == null) return null
+  return liveMedian.value - previous.value.price_median
 })
+
+async function toggleExclude(ad: any) {
+  await $fetch(`/api/searches/${id}/ads`, {
+    method: 'PATCH',
+    body: { adRowId: ad.id, excluded: !ad.excluded },
+  })
+  // Refresh ads (struck styling) and detail (live KPIs update instantly).
+  await Promise.all([refreshAds(), refreshDetail()])
+}
 
 const sortKey = ref<'price' | 'seen' | 'posted'>('seen')
 const sortedAds = computed(() => {
@@ -53,12 +66,10 @@ const sortedAds = computed(() => {
   return list
 })
 
-const badge: Record<string, { label: string; cls: string }> = {
-  new: { label: 'Neu', cls: 'bg-sky-500/15 text-sky-300' },
-  down: { label: 'Preis gesenkt', cls: 'bg-emerald-500/15 text-emerald-300' },
-  up: { label: 'Preis erhöht', cls: 'bg-red-500/15 text-red-300' },
-  same: { label: '', cls: '' },
-}
+const activeAds = computed(() => sortedAds.value.filter((a) => !a.excluded))
+const excludedAds = computed(() => sortedAds.value.filter((a) => a.excluded))
+
+const showExcluded = ref(false)
 </script>
 
 <template>
@@ -101,26 +112,27 @@ const badge: Record<string, { label: string; cls: string }> = {
       Letzter Lauf fehlgeschlagen: {{ search.last_error }}
     </p>
 
-    <!-- KPIs -->
+    <!-- KPIs (live über aktive, nicht ausgeschlossene Anzeigen) -->
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
         <div class="text-xs text-slate-500">Aktive Anzeigen</div>
         <div class="mt-1 text-2xl font-semibold">{{ detail.counts.active }}</div>
+        <div v-if="detail.counts.excluded" class="text-xs text-slate-500">+{{ detail.counts.excluded }} ausgeschlossen</div>
       </div>
       <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
         <div class="text-xs text-slate-500">Median-Preis</div>
-        <div class="mt-1 text-2xl font-semibold text-brand-400">{{ formatPriceShort(latest?.price_median) }}</div>
+        <div class="mt-1 text-2xl font-semibold text-brand-400">{{ formatPriceShort(liveMedian) }}</div>
         <div v-if="medianDelta != null" :class="['text-xs', medianDelta < 0 ? 'text-emerald-400' : medianDelta > 0 ? 'text-red-400' : 'text-slate-500']">
           {{ medianDelta > 0 ? '+' : '' }}{{ medianDelta }} € ggü. Vorlauf
         </div>
       </div>
       <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
         <div class="text-xs text-slate-500">Ø Preis</div>
-        <div class="mt-1 text-2xl font-semibold">{{ latest?.price_avg ? formatPriceShort(Math.round(latest.price_avg)) : '–' }}</div>
+        <div class="mt-1 text-2xl font-semibold">{{ live?.price_avg ? formatPriceShort(Math.round(live.price_avg)) : '–' }}</div>
       </div>
       <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
         <div class="text-xs text-slate-500">Min / Max</div>
-        <div class="mt-1 text-base font-semibold">{{ formatPriceShort(latest?.price_min) }} <span class="text-slate-600">/</span> {{ formatPriceShort(latest?.price_max) }}</div>
+        <div class="mt-1 text-base font-semibold">{{ formatPriceShort(live?.price_min) }} <span class="text-slate-600">/</span> {{ formatPriceShort(live?.price_max) }}</div>
       </div>
       <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
         <div class="text-xs text-slate-500">Neu (letzter Lauf)</div>
@@ -144,7 +156,7 @@ const badge: Record<string, { label: string; cls: string }> = {
     <!-- Ads table -->
     <section class="rounded-xl border border-slate-800 bg-slate-900/60">
       <div class="flex items-center justify-between border-b border-slate-800 px-5 py-3">
-        <h2 class="font-medium">Anzeigen <span class="text-sm text-slate-500">({{ ads?.length ?? 0 }})</span></h2>
+        <h2 class="font-medium">Anzeigen <span class="text-sm text-slate-500">({{ activeAds.length }})</span></h2>
         <label class="text-sm text-slate-400">
           Sortieren:
           <select v-model="sortKey" class="ml-1 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-sm">
@@ -160,33 +172,34 @@ const badge: Record<string, { label: string; cls: string }> = {
       </div>
 
       <div v-else class="divide-y divide-slate-800">
-        <div v-for="ad in sortedAds" :key="ad.id"
-          :class="['flex items-center gap-4 px-5 py-3', ad.status === 'removed' ? 'opacity-50' : '']">
-          <img v-if="ad.image_url" :src="ad.image_url" alt="" class="h-12 w-12 shrink-0 rounded object-cover bg-slate-800" loading="lazy" />
-          <div v-else class="h-12 w-12 shrink-0 rounded bg-slate-800" />
-
-          <div class="min-w-0 flex-1">
-            <a :href="ad.ad_url" target="_blank" rel="noopener"
-              class="block truncate font-medium hover:text-brand-400">{{ ad.title }}</a>
-            <div class="flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
-              <span v-if="ad.location_city">{{ ad.location_zip }} {{ ad.location_city }}</span>
-              <span v-if="ad.posted_at">· eingestellt {{ fromNow(ad.posted_at) }}</span>
-              <span v-if="ad.status === 'removed'" class="text-slate-400">· entfernt</span>
-            </div>
-          </div>
-
-          <PriceSparkline :values="ad.history.map((h: any) => h.price)" />
-
-          <div class="w-28 shrink-0 text-right">
-            <div class="font-semibold">{{ formatPrice(ad.current_price) }}</div>
-            <span v-if="badge[ad.priceChange]?.label"
-              :class="['mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px]', badge[ad.priceChange].cls]">
-              {{ badge[ad.priceChange].label }}
-              <template v-if="ad.priceChange !== 'new' && ad.lastChange"> {{ ad.lastChange > 0 ? '+' : '' }}{{ ad.lastChange }} €</template>
-            </span>
-          </div>
+        <AdRow v-for="ad in activeAds" :key="ad.id" :ad="ad" @toggle="toggleExclude" />
+        <div v-if="!activeAds.length" class="px-5 py-8 text-center text-sm text-slate-500">
+          Alle Anzeigen sind aus der Statistik gestrichen.
         </div>
       </div>
+
+      <!-- Accordion: gestrichene Anzeigen -->
+      <div v-if="excludedAds.length" class="border-t border-slate-800">
+        <button
+          class="flex w-full items-center justify-between px-5 py-3 text-sm text-slate-300 hover:bg-slate-800/40"
+          @click="showExcluded = !showExcluded">
+          <span class="flex items-center gap-2">
+            <svg :class="['h-4 w-4 transition-transform', showExcluded ? 'rotate-90' : '']" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z" clip-rule="evenodd" />
+            </svg>
+            Gestrichene Anzeigen
+            <span class="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-300">{{ excludedAds.length }}</span>
+          </span>
+          <span class="text-xs text-slate-500">{{ showExcluded ? 'zuklappen' : 'aufklappen' }}</span>
+        </button>
+        <div v-show="showExcluded" class="divide-y divide-slate-800 border-t border-slate-800">
+          <AdRow v-for="ad in excludedAds" :key="ad.id" :ad="ad" @toggle="toggleExclude" />
+        </div>
+      </div>
+
+      <p class="border-t border-slate-800 px-5 py-2 text-xs text-slate-500">
+        Gestrichene Anzeigen zählen nicht zu Median/Ø/Min/Max und werden in künftigen Läufen ignoriert.
+      </p>
     </section>
   </div>
 

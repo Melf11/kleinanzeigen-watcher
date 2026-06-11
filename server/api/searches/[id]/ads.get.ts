@@ -17,6 +17,7 @@ interface AdRow {
   current_price: number | null
   status: string
   removed_at: string | null
+  excluded: boolean
 }
 
 interface HistoryRow {
@@ -34,7 +35,7 @@ export default defineEventHandler(async (event) => {
 
   const ads = await query<AdRow>(
     `SELECT id, ad_id, title, ad_url, image_url, location_city, location_zip, seller_type,
-            posted_at, first_seen_at, last_seen_at, current_price, status, removed_at
+            posted_at, first_seen_at, last_seen_at, current_price, status, removed_at, excluded
        FROM ads
       WHERE search_id = $1
       ORDER BY (status = 'active') DESC, last_seen_at DESC`,

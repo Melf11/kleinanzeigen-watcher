@@ -114,9 +114,12 @@ CREATE TABLE IF NOT EXISTS ads (
   current_price INTEGER,
   status        TEXT NOT NULL DEFAULT 'active',
   removed_at    TIMESTAMPTZ,
+  excluded      BOOLEAN NOT NULL DEFAULT false,
   UNIQUE (search_id, ad_id)
 );
 CREATE INDEX IF NOT EXISTS idx_ads_search ON ads(search_id);
+-- Migration for DBs created before the "excluded" feature.
+ALTER TABLE ads ADD COLUMN IF NOT EXISTS excluded BOOLEAN NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS price_history (
   id          BIGSERIAL PRIMARY KEY,

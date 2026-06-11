@@ -26,6 +26,8 @@ PostgreSQL speichert.
 - Pro-Suche-Intervall (Default 24h) + manueller „Jetzt aktualisieren"-Button
 - Dashboard: KPIs (Anzahl, Median/Ø/Min/Max), Markt-Preiskurve, Anzeigen-Tabelle
   mit Preis-Badges („Neu" / „Preis gesenkt" / „erhöht") und Preis-Sparklines
+- Einzelne Anzeigen **aus der Statistik streichen** (und wieder zurückholen): gestrichene
+  Anzeigen zählen sofort nicht mehr zu Median/Ø/Min/Max und werden in künftigen Läufen ignoriert
 - **Multi-User:** jeder Benutzer hinterlegt seinen **eigenen API-Token** und sieht nur
   seine eigenen Suchen/Daten
 
