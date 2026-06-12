@@ -37,6 +37,9 @@ PostgreSQL speichert.
   **Aktuell verfügbar** und **Gesamt inkl. entfernte** (Langzeit-Auswertung über Jahre)
 - **Multi-User:** jeder Benutzer hinterlegt seinen **eigenen API-Token** und sieht nur
   seine eigenen Suchen/Daten
+- **Admin-Nutzerverwaltung:** Admins verwalten unter `/admin/users` alle Konten
+  (anlegen, Rolle/Verifizierung umschalten, Passwort zurücksetzen, löschen) — mit
+  Schutz gegen Selbst-Löschen und Entzug des letzten Admins. Der erste/seeded User ist Admin
 - **Sichere Accountverwaltung:** Registrierung mit **E-Mail-Verifizierung** (Login erst
   nach Bestätigung), **Passwort-Reset** und **E-Mail/Passwort ändern** per E-Mail-Link;
   gehashte Single-Use-Tokens mit Ablauf, Rate-Limiting und Anti-Enumeration. E-Mail-Versand

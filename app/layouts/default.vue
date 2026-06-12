@@ -2,6 +2,9 @@
 const { user, clear } = useUserSession()
 const router = useRouter()
 
+// Whether to show the admin link (authoritative check is server-side anyway).
+const { data: me } = await useFetch<{ isAdmin?: boolean }>('/api/me')
+
 async function logout() {
   await $fetch('/api/auth/logout', { method: 'POST' })
   await clear()
@@ -22,6 +25,7 @@ async function logout() {
           <NuxtLink to="/" class="hover:text-white" active-class="text-white">Suchen</NuxtLink>
           <NuxtLink to="/searches/new" class="hover:text-white" active-class="text-white">Neue Suche</NuxtLink>
           <NuxtLink to="/settings" class="hover:text-white" active-class="text-white">Einstellungen</NuxtLink>
+          <NuxtLink v-if="me?.isAdmin" to="/admin/users" class="hover:text-white" active-class="text-white">Nutzer</NuxtLink>
         </nav>
 
         <div class="ml-auto flex items-center gap-3 text-sm">

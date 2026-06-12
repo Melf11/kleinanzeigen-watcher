@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   // Log the user in directly after verifying for a smooth first experience.
   const user = await getUserById(consumed.user_id)
   if (user) {
-    await setUserSession(event, { user: { id: user.id, username: user.username } })
+    await setUserSession(event, { user: { id: user.id, username: user.username, isAdmin: user.is_admin } })
   }
   return { ok: true }
 })

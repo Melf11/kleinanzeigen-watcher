@@ -9,6 +9,7 @@ export interface UserRow {
   email: string | null
   email_verified: boolean
   pending_email: string | null
+  is_admin: boolean
   tg_bot_token: string | null
   tg_chat_id: string | null
   wa_phone: string | null
@@ -92,6 +93,60 @@ export async function setUserNotifyConfig(
   if ('waApikey' in cfg) add('wa_apikey', clean(cfg.waApikey))
   if (!sets.length) return
   await query(`UPDATE users SET ${sets.join(', ')} WHERE id = $1`, params)
+}
+
+// --- Admin user management ---
+
+export interface AdminUserRow {
+  id: string
+  username: string
+  email: string | null
+  email_verified: boolean
+  is_admin: boolean
+  created_at: string
+  search_count: number
+}
+
+export function listUsersWithStats() {
+  return query<AdminUserRow>(
+    `SELECT u.id, u.username, u.email, u.email_verified, u.is_admin, u.created_at,
+            (SELECT count(*)::int FROM searches s WHERE s.user_id = u.id) AS search_count
+       FROM users u
+      ORDER BY u.id ASC`,
+  )
+}
+
+export async function adminCreateUser(opts: {
+  username: string
+  email: string | null
+  password: string
+  isAdmin: boolean
+}): Promise<UserRow> {
+  const passwordHash = await hashPassword(opts.password)
+  const rows = await query<UserRow>(
+    `INSERT INTO users (username, email, password_hash, email_verified, is_admin)
+     VALUES ($1, $2, $3, true, $4) RETURNING *`,
+    [opts.username, opts.email, passwordHash, opts.isAdmin],
+  )
+  return rows[0]
+}
+
+export async function setUserAdmin(id: string | number, isAdmin: boolean): Promise<void> {
+  await query('UPDATE users SET is_admin = $2 WHERE id = $1', [id, isAdmin])
+}
+
+export async function setUserEmailVerifiedFlag(id: string | number, verified: boolean): Promise<void> {
+  await query('UPDATE users SET email_verified = $2 WHERE id = $1', [id, verified])
+}
+
+export async function deleteUserById(id: string | number): Promise<boolean> {
+  const rows = await query('DELETE FROM users WHERE id = $1 RETURNING id', [id])
+  return rows.length > 0
+}
+
+export async function countAdmins(): Promise<number> {
+  const row = await queryOne<{ n: number }>('SELECT count(*)::int AS n FROM users WHERE is_admin = true')
+  return row?.n ?? 0
 }
 
 /** Mask an API token for safe display, e.g. "klaz_live_...Fn3k". */

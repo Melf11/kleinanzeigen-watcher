@@ -165,6 +165,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS wa_apikey    TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email          TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_email  TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin       BOOLEAN NOT NULL DEFAULT false;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique ON users (lower(email)) WHERE email IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS auth_tokens (
@@ -195,7 +196,20 @@ export async function initDatabase(): Promise<void> {
 async function doInit(): Promise<void> {
   await getPool().query(SCHEMA_SQL)
   await seedAdmin()
+  await ensureAdmin()
   console.log('[db] schema ready')
+}
+
+/**
+ * Make sure at least one admin exists. On upgrades from before the is_admin
+ * flag, promotes the earliest-created user (the seeded admin). Idempotent.
+ */
+async function ensureAdmin(): Promise<void> {
+  await query(
+    `UPDATE users SET is_admin = true
+      WHERE id = (SELECT id FROM users ORDER BY id ASC LIMIT 1)
+        AND NOT EXISTS (SELECT 1 FROM users WHERE is_admin = true)`,
+  )
 }
 
 async function seedAdmin(): Promise<void> {
@@ -210,9 +224,9 @@ async function seedAdmin(): Promise<void> {
 
   const passwordHash = await hashPassword(password)
   const seedToken = config.klazApiKey || null
-  // Seeded admin is pre-verified (no email needed to log in).
+  // Seeded admin is pre-verified (no email needed) and has the admin role.
   await query(
-    'INSERT INTO users (username, password_hash, klaz_api_key, email_verified) VALUES ($1, $2, $3, true)',
+    'INSERT INTO users (username, password_hash, klaz_api_key, email_verified, is_admin) VALUES ($1, $2, $3, true, true)',
     [username, passwordHash, seedToken],
   )
   console.log(`[db] seeded default user "${username}"`)
