@@ -1,0 +1,10 @@
+# Automatic HTTPS via Let's Encrypt. DOMAIN and ACME_EMAIL come from the
+# environment (set in the server's .env, passed through by docker-compose.prod.yml).
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}
