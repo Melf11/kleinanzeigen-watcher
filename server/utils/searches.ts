@@ -1,4 +1,5 @@
 import { query, queryOne } from './db'
+import { computeNextRunAt, parseRunTime } from './schedule'
 
 export interface SearchRow {
   id: string
@@ -20,6 +21,8 @@ export interface SearchRow {
   max_pages: number
   interval_minutes: number
   enabled: boolean
+  notify: string
+  run_time: string | null
   created_at: string
   last_run_at: string | null
   next_run_at: string
@@ -45,6 +48,8 @@ export interface SearchInput {
   max_pages?: number
   interval_minutes?: number
   enabled?: boolean
+  notify?: string
+  run_time?: string | null
 }
 
 export function listSearchesForUser(userId: string) {
@@ -62,6 +67,7 @@ export function getSearchById(id: string) {
 }
 
 const VALID_MODES = new Set(['all', 'any'])
+const VALID_NOTIFY = new Set(['off', 'telegram', 'whatsapp', 'both'])
 
 function clampInt(v: unknown, def: number, min: number, max: number): number {
   const n = Number(v)
@@ -88,22 +94,27 @@ function normalize(input: SearchInput) {
     max_pages: clampInt(input.max_pages, 1, 1, 10),
     interval_minutes: clampInt(input.interval_minutes, 1440, 5, 60 * 24 * 30),
     enabled: input.enabled === undefined ? true : !!input.enabled,
+    notify: VALID_NOTIFY.has(input.notify || '') ? (input.notify as string) : 'off',
+    run_time: parseRunTime(input.run_time) ? input.run_time!.trim() : null,
   }
 }
 
 export async function createSearch(userId: string, input: SearchInput): Promise<SearchRow> {
   const n = normalize(input)
+  const tz = useRuntimeConfig().tz || 'Europe/Berlin'
+  const nextRun = computeNextRunAt(n.interval_minutes, n.run_time, tz)
   const rows = await query<SearchRow>(
     `INSERT INTO searches
       (user_id, name, query, include_keywords, include_mode, exclude_keywords,
        location_id, distance, min_price, max_price, category_id, poster_type, ad_type,
-       picture_required, shippable, max_pages, interval_minutes, enabled, next_run_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18, now())
+       picture_required, shippable, max_pages, interval_minutes, enabled, notify, run_time, next_run_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
      RETURNING *`,
     [
       userId, n.name, n.query, n.include_keywords, n.include_mode, n.exclude_keywords,
       n.location_id, n.distance, n.min_price, n.max_price, n.category_id, n.poster_type, n.ad_type,
-      n.picture_required, n.shippable, n.max_pages, n.interval_minutes, n.enabled,
+      n.picture_required, n.shippable, n.max_pages, n.interval_minutes, n.enabled, n.notify, n.run_time,
+      nextRun,
     ],
   )
   return rows[0]
@@ -115,18 +126,23 @@ export async function updateSearch(
   input: SearchInput,
 ): Promise<SearchRow | null> {
   const n = normalize(input)
+  const tz = useRuntimeConfig().tz || 'Europe/Berlin'
+  // Reschedule the next run so interval/run_time edits take effect immediately.
+  const nextRun = computeNextRunAt(n.interval_minutes, n.run_time, tz)
   const rows = await query<SearchRow>(
     `UPDATE searches SET
        name=$3, query=$4, include_keywords=$5, include_mode=$6, exclude_keywords=$7,
        location_id=$8, distance=$9, min_price=$10, max_price=$11, category_id=$12,
        poster_type=$13, ad_type=$14, picture_required=$15, shippable=$16,
-       max_pages=$17, interval_minutes=$18, enabled=$19
+       max_pages=$17, interval_minutes=$18, enabled=$19, notify=$20, run_time=$21,
+       next_run_at=$22
      WHERE id=$1 AND user_id=$2
      RETURNING *`,
     [
       id, userId, n.name, n.query, n.include_keywords, n.include_mode, n.exclude_keywords,
       n.location_id, n.distance, n.min_price, n.max_price, n.category_id, n.poster_type, n.ad_type,
-      n.picture_required, n.shippable, n.max_pages, n.interval_minutes, n.enabled,
+      n.picture_required, n.shippable, n.max_pages, n.interval_minutes, n.enabled, n.notify, n.run_time,
+      nextRun,
     ],
   )
   return rows[0] ?? null

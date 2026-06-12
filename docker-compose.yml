@@ -30,6 +30,9 @@ services:
       NUXT_AUTH_PASSWORD: ${NUXT_AUTH_PASSWORD:-admin}
       NUXT_SESSION_PASSWORD: ${NUXT_SESSION_PASSWORD:-please-change-me-to-a-long-random-string-min-32}
       NUXT_KLAZ_API_KEY: ${NUXT_KLAZ_API_KEY:-}
+      NUXT_TZ: ${NUXT_TZ:-Europe/Berlin}
+      # Local dev runs over plain HTTP, so the session cookie must not be Secure.
+      NUXT_SESSION_COOKIE_SECURE: ${NUXT_SESSION_COOKIE_SECURE:-false}
     # Override APP_PORT if 3000 is already used on your host.
     ports:
       - '${APP_PORT:-3000}:3000'

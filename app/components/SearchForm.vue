@@ -17,6 +17,8 @@ interface SearchModel {
   max_pages: number
   interval_minutes: number
   enabled: boolean
+  notify: string
+  run_time: string | null
 }
 
 const props = defineProps<{
@@ -45,6 +47,19 @@ const form = reactive<SearchModel>({
   max_pages: props.initial?.max_pages ?? 1,
   interval_minutes: props.initial?.interval_minutes ?? 1440,
   enabled: props.initial?.enabled ?? true,
+  notify: props.initial?.notify ?? 'off',
+  run_time: props.initial?.run_time ?? null,
+})
+
+// Notification config presence (to warn if a channel isn't set up yet).
+const notifyStatus = ref<{ telegram: boolean; whatsapp: boolean }>({ telegram: false, whatsapp: false })
+onMounted(async () => {
+  try {
+    const me = await $fetch<any>('/api/me')
+    notifyStatus.value = { telegram: !!me?.telegram?.configured, whatsapp: !!me?.whatsapp?.configured }
+  } catch {
+    // ignore
+  }
 })
 
 const intervalOptions = [
@@ -277,9 +292,38 @@ function onSubmit() {
           </select>
         </label>
         <label class="block text-sm">
+          <span class="text-slate-400">Uhrzeit (optional)</span>
+          <div class="mt-1 flex items-center gap-2">
+            <input :value="form.run_time ?? ''" type="time"
+              class="input !mt-0 flex-1"
+              @input="form.run_time = ($event.target as HTMLInputElement).value || null" />
+            <button v-if="form.run_time" type="button" class="text-slate-500 hover:text-slate-300" title="Uhrzeit entfernen"
+              @click="form.run_time = null">✕</button>
+          </div>
+          <span class="text-xs text-slate-500">Anker-Zeit; Läufe richten sich daran aus (Zeitzone Europe/Berlin).</span>
+        </label>
+        <label class="block text-sm">
           <span class="text-slate-400">Seiten pro Lauf</span>
           <input v-model.number="form.max_pages" type="number" min="1" max="10" class="input" />
           <span class="text-xs text-amber-400/80">= {{ form.max_pages }} Credit(s) pro Lauf (à 100 Anzeigen)</span>
+        </label>
+        <label class="block text-sm">
+          <span class="text-slate-400">Benachrichtigung pro Lauf</span>
+          <select v-model="form.notify" class="input">
+            <option value="off">Aus</option>
+            <option value="telegram">Telegram</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="both">Telegram + WhatsApp</option>
+          </select>
+          <span v-if="form.notify === 'telegram' && !notifyStatus.telegram" class="text-xs text-amber-400">
+            Telegram noch nicht eingerichtet – siehe Einstellungen.
+          </span>
+          <span v-else-if="form.notify === 'whatsapp' && !notifyStatus.whatsapp" class="text-xs text-amber-400">
+            WhatsApp noch nicht eingerichtet – siehe Einstellungen.
+          </span>
+          <span v-else-if="form.notify === 'both' && (!notifyStatus.telegram || !notifyStatus.whatsapp)" class="text-xs text-amber-400">
+            Mind. ein Kanal noch nicht eingerichtet – siehe Einstellungen.
+          </span>
         </label>
         <label class="flex items-end gap-2 text-sm pb-2">
           <input v-model="form.enabled" type="checkbox" class="checkbox" />

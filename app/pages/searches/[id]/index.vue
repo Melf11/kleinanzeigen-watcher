@@ -36,14 +36,26 @@ async function remove() {
 const search = computed(() => detail.value?.search)
 const latest = computed(() => detail.value?.latestRun)
 const previous = computed(() => detail.value?.previousRun)
-const live = computed(() => detail.value?.liveStats)
-const liveMedian = computed(() =>
-  live.value?.price_median != null ? Math.round(live.value.price_median) : null,
+
+// Statistic basis: "available" (active only) or "all" (incl. removed/sold).
+const basis = ref<'available' | 'all'>('available')
+const stats = computed(() =>
+  basis.value === 'all' ? detail.value?.liveStatsAll : detail.value?.liveStats,
+)
+const statMedian = computed(() =>
+  stats.value?.price_median != null ? Math.round(stats.value.price_median) : null,
+)
+const adCount = computed(() =>
+  basis.value === 'all'
+    ? (detail.value?.counts.active ?? 0) + (detail.value?.counts.removed ?? 0)
+    : detail.value?.counts.active ?? 0,
 )
 
 const medianDelta = computed(() => {
-  if (liveMedian.value == null || previous.value?.price_median == null) return null
-  return liveMedian.value - previous.value.price_median
+  // Delta vs previous run only makes sense for the current-market view.
+  if (basis.value !== 'available') return null
+  if (statMedian.value == null || previous.value?.price_median == null) return null
+  return statMedian.value - previous.value.price_median
 })
 
 async function toggleExclude(ad: any) {
@@ -101,7 +113,9 @@ const showExcluded = ref(false)
         {{ search.enabled ? 'aktiv' : 'pausiert' }}
       </span>
       <span>Intervall: {{ Math.round(search.interval_minutes / 60) }}h</span>
+      <span v-if="search.run_time">um {{ search.run_time }} Uhr</span>
       <span>{{ search.max_pages }} Credit(s)/Lauf</span>
+      <span v-if="search.notify && search.notify !== 'off'" class="text-brand-400">🔔 {{ search.notify === 'both' ? 'Telegram + WhatsApp' : search.notify === 'telegram' ? 'Telegram' : 'WhatsApp' }}</span>
       <span>Letzter Lauf: {{ fromNow(search.last_run_at) }}</span>
       <span>Nächster: {{ formatDate(search.next_run_at) }}</span>
       <span v-if="runMessage" class="text-brand-400">{{ runMessage }}</span>
@@ -112,27 +126,39 @@ const showExcluded = ref(false)
       Letzter Lauf fehlgeschlagen: {{ search.last_error }}
     </p>
 
-    <!-- KPIs (live über aktive, nicht ausgeschlossene Anzeigen) -->
+    <!-- Statistik-Basis-Umschalter -->
+    <div class="flex items-center gap-3">
+      <span class="text-xs text-slate-500">Statistik-Basis:</span>
+      <div class="inline-flex rounded-lg border border-slate-700 p-0.5 text-xs">
+        <button :class="['rounded-md px-3 py-1', basis === 'available' ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800']"
+          @click="basis = 'available'">Aktuell verfügbar</button>
+        <button :class="['rounded-md px-3 py-1', basis === 'all' ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800']"
+          @click="basis = 'all'">Gesamt (inkl. entfernte)</button>
+      </div>
+    </div>
+
+    <!-- KPIs (live über die gewählte Basis, ausgeschlossene Anzeigen immer raus) -->
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-        <div class="text-xs text-slate-500">Aktive Anzeigen</div>
-        <div class="mt-1 text-2xl font-semibold">{{ detail.counts.active }}</div>
-        <div v-if="detail.counts.excluded" class="text-xs text-slate-500">+{{ detail.counts.excluded }} ausgeschlossen</div>
+        <div class="text-xs text-slate-500">{{ basis === 'all' ? 'Anzeigen gesamt' : 'Aktive Anzeigen' }}</div>
+        <div class="mt-1 text-2xl font-semibold">{{ adCount }}</div>
+        <div v-if="basis === 'all'" class="text-xs text-slate-500">{{ detail.counts.active }} aktiv · {{ detail.counts.removed }} entfernt</div>
+        <div v-else-if="detail.counts.excluded" class="text-xs text-slate-500">+{{ detail.counts.excluded }} ausgeschlossen</div>
       </div>
       <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
         <div class="text-xs text-slate-500">Median-Preis</div>
-        <div class="mt-1 text-2xl font-semibold text-brand-400">{{ formatPriceShort(liveMedian) }}</div>
+        <div class="mt-1 text-2xl font-semibold text-brand-400">{{ formatPriceShort(statMedian) }}</div>
         <div v-if="medianDelta != null" :class="['text-xs', medianDelta < 0 ? 'text-emerald-400' : medianDelta > 0 ? 'text-red-400' : 'text-slate-500']">
           {{ medianDelta > 0 ? '+' : '' }}{{ medianDelta }} € ggü. Vorlauf
         </div>
       </div>
       <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
         <div class="text-xs text-slate-500">Ø Preis</div>
-        <div class="mt-1 text-2xl font-semibold">{{ live?.price_avg ? formatPriceShort(Math.round(live.price_avg)) : '–' }}</div>
+        <div class="mt-1 text-2xl font-semibold">{{ stats?.price_avg ? formatPriceShort(Math.round(stats.price_avg)) : '–' }}</div>
       </div>
       <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
         <div class="text-xs text-slate-500">Min / Max</div>
-        <div class="mt-1 text-base font-semibold">{{ formatPriceShort(live?.price_min) }} <span class="text-slate-600">/</span> {{ formatPriceShort(live?.price_max) }}</div>
+        <div class="mt-1 text-base font-semibold">{{ formatPriceShort(stats?.price_min) }} <span class="text-slate-600">/</span> {{ formatPriceShort(stats?.price_max) }}</div>
       </div>
       <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
         <div class="text-xs text-slate-500">Neu (letzter Lauf)</div>
@@ -146,7 +172,11 @@ const showExcluded = ref(false)
 
     <!-- Chart -->
     <section class="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
-      <h2 class="mb-3 font-medium">Markt-Preisentwicklung</h2>
+      <h2 class="font-medium">Markt-Preisentwicklung</h2>
+      <p class="mb-3 text-xs text-slate-500">
+        Dauerhafte Historie – jeder Punkt bleibt erhalten. Anzeigen flossen ein, solange sie verfügbar waren
+        (auch heute entfernte zählen zu ihrer Zeit).
+      </p>
       <ClientOnly>
         <PriceTrendChart :history="history ?? []" />
         <template #fallback><div class="h-64" /></template>

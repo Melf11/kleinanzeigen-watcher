@@ -3,6 +3,8 @@ import { getSearchById, type SearchRow } from './searches'
 import { getUserById } from './users'
 import { searchAds, KlazError, type KlazAd } from './klaz'
 import { filterAds, parseKeywords, type IncludeMode } from './matcher'
+import { computeNextRunAt } from './schedule'
+import { notifyForRun } from './notify'
 
 export interface RunResult {
   status: 'ok' | 'error'
@@ -26,14 +28,16 @@ function median(values: number[]): number | null {
 }
 
 async function scheduleNext(search: SearchRow, status: string, error: string | null) {
+  const tz = useRuntimeConfig().tz || 'Europe/Berlin'
+  const nextRun = computeNextRunAt(search.interval_minutes, search.run_time, tz)
   await query(
     `UPDATE searches
        SET last_run_at = now(),
-           next_run_at = now() + ($2 || ' minutes')::interval,
+           next_run_at = $2,
            last_run_status = $3,
            last_error = $4
      WHERE id = $1`,
-    [search.id, String(search.interval_minutes), status, error],
+    [search.id, nextRun, status, error],
   )
 }
 
@@ -42,7 +46,10 @@ async function scheduleNext(search: SearchRow, status: string, error: string | n
  * price changes and an aggregate run snapshot. Builds the price history that
  * the API itself does not provide.
  */
-export async function runSearch(searchId: string): Promise<RunResult> {
+export async function runSearch(
+  searchId: string,
+  opts: { notify?: boolean } = {},
+): Promise<RunResult> {
   const search = await getSearchById(searchId)
   if (!search) return { status: 'error', matched: 0, newCount: 0, removedCount: 0, pagesFetched: 0, error: 'Suche nicht gefunden' }
 
@@ -103,6 +110,8 @@ export async function runSearch(searchId: string): Promise<RunResult> {
   let removedCount = 0
   const seenAdIds = new Set<string>()
   const prices: number[] = []
+  const newAds: { title: string; price: number | null; url: string | null }[] = []
+  const priceDrops: { title: string; oldPrice: number | null; newPrice: number | null; url: string | null }[] = []
 
   await withTransaction(async (client) => {
     for (const ad of matched) {
@@ -139,6 +148,7 @@ export async function runSearch(searchId: string): Promise<RunResult> {
           [inserted.rows[0].id, price],
         )
         newCount++
+        if (!isExcluded) newAds.push({ title: ad.title ?? '', price, url: ad.ad_url ?? null })
       } else {
         const row = existing.rows[0]
         if (row.current_price !== price) {
@@ -146,6 +156,9 @@ export async function runSearch(searchId: string): Promise<RunResult> {
             row.id,
             price,
           ])
+          if (!isExcluded && price != null && row.current_price != null && price < row.current_price) {
+            priceDrops.push({ title: ad.title ?? '', oldPrice: row.current_price, newPrice: price, url: ad.ad_url ?? null })
+          }
         }
         await client.query(
           `UPDATE ads SET
@@ -199,6 +212,20 @@ export async function runSearch(searchId: string): Promise<RunResult> {
   )
 
   await scheduleNext(search, 'ok', null)
+
+  // Send the summary on scheduled runs only (not on manual "refresh" clicks).
+  if (opts.notify && owner && search.notify !== 'off') {
+    await notifyForRun(owner, search, {
+      matched: matched.length,
+      newCount,
+      removedCount,
+      priceMin,
+      priceMax,
+      priceMedian,
+      newAds,
+      priceDrops,
+    }).catch((e) => console.error(`[notify] dispatch failed for search #${search.id}`, e))
+  }
 
   return { status: 'ok', matched: matched.length, newCount, removedCount, pagesFetched }
 }

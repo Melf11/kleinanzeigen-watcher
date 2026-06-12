@@ -13,7 +13,7 @@ async function tick() {
     const due = await dueSearches()
     for (const search of due) {
       try {
-        const result = await runSearch(search.id)
+        const result = await runSearch(search.id, { notify: true })
         console.log(
           `[scheduler] ran search #${search.id} "${search.name}" → ${result.status}` +
             ` (matched ${result.matched}, new ${result.newCount}, removed ${result.removedCount})`,

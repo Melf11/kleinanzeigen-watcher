@@ -3,11 +3,16 @@ import { requireUserId } from '../utils/session'
 import { getCategories } from '../utils/categories'
 
 /**
- * Cached category tree for the search form. Uses the user's token only if the
- * cache is cold (categories rarely change), so it normally costs no credits.
+ * Category tree for the search form. Served from the DB cache (pulled once).
+ * Pass ?refresh=1 to force a one-off re-pull (costs 1 credit) if categories
+ * ever change.
  */
 export default defineEventHandler(async (event) => {
   const userId = await requireUserId(event)
+  const force = getQuery(event).refresh === '1'
+
+  // Token is only *used* on a cache miss or forced refresh — but it must be
+  // available so the one-time initial pull can happen.
   const user = await getUserById(userId)
-  return getCategories(user?.klaz_api_key)
+  return getCategories(user?.klaz_api_key, { force })
 })

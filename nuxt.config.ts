@@ -19,6 +19,14 @@ export default defineNuxtConfig({
     authUsername: 'admin', // NUXT_AUTH_USERNAME
     authPassword: 'admin', // NUXT_AUTH_PASSWORD
     klazApiKey: '', // NUXT_KLAZ_API_KEY (optional seed for dev admin)
+    tz: 'Europe/Berlin', // NUXT_TZ — timezone for the "run at HH:MM" anchor
+    // nuxt-auth-utils session: secure cookie in production (needs HTTPS).
+    // Override with NUXT_SESSION_COOKIE_SECURE=false for a plain-HTTP/IP setup.
+    session: {
+      cookie: {
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
     public: {
       appName: 'Kleinanzeigen Preis-Watcher',
     },

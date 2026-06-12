@@ -11,5 +11,15 @@ export default defineEventHandler(async (event) => {
     username: user.username,
     hasToken: !!user.klaz_api_key,
     tokenMasked: maskToken(user.klaz_api_key),
+    telegram: {
+      configured: !!(user.tg_bot_token && user.tg_chat_id),
+      botTokenMasked: maskToken(user.tg_bot_token),
+      chatId: user.tg_chat_id, // not secret
+    },
+    whatsapp: {
+      configured: !!(user.wa_phone && user.wa_apikey),
+      phone: user.wa_phone, // not secret
+      apiKeyMasked: maskToken(user.wa_apikey),
+    },
   }
 })

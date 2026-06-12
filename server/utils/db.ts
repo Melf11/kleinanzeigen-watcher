@@ -145,6 +145,21 @@ CREATE TABLE IF NOT EXISTS search_runs (
   error         TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_search_runs_search ON search_runs(search_id, run_at);
+
+-- Generic key/value cache (e.g. the category tree — pulled once, then served from here).
+CREATE TABLE IF NOT EXISTS app_cache (
+  key        TEXT PRIMARY KEY,
+  value      JSONB NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Notifications + time-of-day scheduling (added later; idempotent migrations).
+ALTER TABLE searches ADD COLUMN IF NOT EXISTS notify   TEXT NOT NULL DEFAULT 'off';
+ALTER TABLE searches ADD COLUMN IF NOT EXISTS run_time TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS tg_bot_token TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS tg_chat_id   TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS wa_phone     TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS wa_apikey    TEXT;
 `
 
 /**
