@@ -25,7 +25,11 @@ async function logout() {
           <NuxtLink to="/" class="hover:text-white" active-class="text-white">Suchen</NuxtLink>
           <NuxtLink to="/searches/new" class="hover:text-white" active-class="text-white">Neue Suche</NuxtLink>
           <NuxtLink to="/settings" class="hover:text-white" active-class="text-white">Einstellungen</NuxtLink>
-          <NuxtLink v-if="me?.isAdmin" to="/admin/users" class="hover:text-white" active-class="text-white">Nutzer</NuxtLink>
+          <NuxtLink v-if="me?.isAdmin" to="/admin"
+            class="flex items-center gap-1 rounded-md bg-brand-700/20 px-2 py-0.5 text-brand-300 hover:bg-brand-700/30 hover:text-brand-200"
+            active-class="!bg-brand-600/30 text-white">
+            <span>🛡️</span> Admin
+          </NuxtLink>
         </nav>
 
         <div class="ml-auto flex items-center gap-3 text-sm">
