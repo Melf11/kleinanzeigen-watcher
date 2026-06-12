@@ -28,3 +28,16 @@ body {
     @apply rounded-md border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800 disabled:opacity-60;
   }
 }
+
+/* Keep browser-autofilled fields on the dark theme (otherwise white-on-white).
+   The inset box-shadow overrides the browser's light autofill background. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: #f1f5f9;
+  caret-color: #f1f5f9;
+  -webkit-box-shadow: 0 0 0 1000px #020617 inset;
+  box-shadow: 0 0 0 1000px #020617 inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
