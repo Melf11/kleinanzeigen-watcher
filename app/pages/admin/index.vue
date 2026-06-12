@@ -34,18 +34,22 @@ const { data: mail } = await useFetch<MailStatus>('/api/admin/mail/status')
 const mailTo = ref(me.value?.email ?? '')
 const mailBusy = ref(false)
 const mailMsg = ref('')
+const mailWarn = ref('')
 const mailErr = ref('')
 
 async function sendMailTest() {
   mailBusy.value = true
   mailMsg.value = ''
+  mailWarn.value = ''
   mailErr.value = ''
   try {
-    const r = await $fetch<{ message?: string }>('/api/admin/mail/test', {
+    const r = await $fetch<{ message?: string; logged?: boolean }>('/api/admin/mail/test', {
       method: 'POST',
       body: { to: mailTo.value },
     })
-    mailMsg.value = r.message || 'Gesendet.'
+    // "logged" = no SMTP configured → it was NOT actually sent: show as warning.
+    if (r.logged) mailWarn.value = r.message || 'Kein SMTP konfiguriert – nichts gesendet.'
+    else mailMsg.value = r.message || 'Gesendet.'
   } catch (e: any) {
     mailErr.value = e?.data?.statusMessage || 'Test fehlgeschlagen'
   } finally {
@@ -221,6 +225,7 @@ async function remove(u: AdminUser) {
         </dl>
 
         <div v-if="mailMsg" class="rounded-md bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 text-sm text-emerald-300">{{ mailMsg }}</div>
+        <div v-if="mailWarn" class="rounded-md bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-sm text-amber-300">{{ mailWarn }}</div>
         <div v-if="mailErr" class="rounded-md bg-red-500/10 border border-red-500/30 px-3 py-2 text-sm text-red-300 break-words">{{ mailErr }}</div>
 
         <div class="flex flex-wrap items-end gap-2">
