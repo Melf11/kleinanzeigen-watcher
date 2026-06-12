@@ -307,10 +307,17 @@ async function clearToken() {
           <button v-if="me?.telegram.configured" :disabled="testing === 'telegram'" @click="sendTest('telegram')"
             class="btn-secondary">{{ testing === 'telegram' ? 'sende…' : 'Test senden' }}</button>
         </div>
-        <p class="text-xs text-slate-500">
-          Bot bei <span class="font-mono">@BotFather</span> anlegen → Bot-Token. Dann dem Bot eine Nachricht
-          schicken und deine Chat-ID (z. B. über <span class="font-mono">@userinfobot</span>) eintragen.
-        </p>
+        <p class="text-xs text-slate-400">Du brauchst einen <strong>Bot-Token</strong> und deine <strong>Chat-ID</strong>.</p>
+        <details class="rounded-md border border-slate-800 bg-slate-950/50 text-xs">
+          <summary class="cursor-pointer select-none px-3 py-2 text-slate-300 hover:text-white">📖 Schritt-für-Schritt-Anleitung</summary>
+          <ol class="list-decimal space-y-2 px-7 pb-3 text-slate-400 marker:text-slate-500">
+            <li>In Telegram den Chat mit <span class="font-mono text-slate-200">@BotFather</span> öffnen und <span class="font-mono text-slate-200">/newbot</span> senden. Den Fragen folgen (Name + Benutzername für den Bot wählen).</li>
+            <li>BotFather antwortet mit einem <strong>Bot-Token</strong> (Form <span class="font-mono text-slate-200">123456789:ABC-DEF…</span>). Diesen unten ins Feld <em>„Bot-Token"</em> einfügen.</li>
+            <li>Den neuen Bot öffnen (Link von BotFather anklicken) und <strong>Start</strong> drücken bzw. ihm „Hallo" schreiben – sonst darf der Bot dir keine Nachrichten senden.</li>
+            <li>Den Chat mit <span class="font-mono text-slate-200">@userinfobot</span> öffnen und „Start" drücken. Er antwortet mit deiner <strong>Chat-ID</strong> (eine Zahl, z. B. <span class="font-mono text-slate-200">123456789</span>). Diese unten ins Feld <em>„Chat-ID"</em> einfügen.</li>
+            <li>Unten auf <strong>Benachrichtigungen speichern</strong> klicken, dann oben rechts auf <strong>Test senden</strong> – die Testnachricht sollte sofort in Telegram ankommen.</li>
+          </ol>
+        </details>
         <div class="grid gap-3 sm:grid-cols-2">
           <label class="block text-sm">
             <span class="text-slate-400">Bot-Token {{ me?.telegram.botTokenMasked ? `(${me.telegram.botTokenMasked})` : '' }}</span>
@@ -333,10 +340,27 @@ async function clearToken() {
           <button v-if="me?.whatsapp.configured" :disabled="testing === 'whatsapp'" @click="sendTest('whatsapp')"
             class="btn-secondary">{{ testing === 'whatsapp' ? 'sende…' : 'Test senden' }}</button>
         </div>
-        <p class="text-xs text-slate-500">
-          Einmalig einrichten: <a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" class="text-brand-400 hover:underline">CallMeBot</a>-Nummer
-          speichern, „I allow callmebot to send me messages" schicken → du erhältst einen apikey.
+        <p class="text-xs text-slate-400">
+          WhatsApp läuft über den kostenlosen Dienst
+          <a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" class="text-brand-400 hover:underline">CallMeBot</a>.
+          Du brauchst deine <strong>Telefonnummer</strong> und einen <strong>API-Key</strong>.
         </p>
+        <details class="rounded-md border border-slate-800 bg-slate-950/50 text-xs">
+          <summary class="cursor-pointer select-none px-3 py-2 text-slate-300 hover:text-white">📖 Schritt-für-Schritt-Anleitung</summary>
+          <ol class="list-decimal space-y-2 px-7 pb-3 text-slate-400 marker:text-slate-500">
+            <li>Die CallMeBot-WhatsApp-Nummer als Kontakt speichern. Die <strong>aktuelle Nummer</strong> steht auf der
+              <a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" class="text-brand-400 hover:underline">CallMeBot-Seite</a>
+              (derzeit <span class="font-mono text-slate-200">+34 644 51 95 23</span>).</li>
+            <li>Dieser Nummer per WhatsApp <strong>genau diese Nachricht</strong> schicken:
+              <span class="font-mono text-slate-200">I allow callmebot to send me messages to this number</span></li>
+            <li>Du bekommst innerhalb weniger Minuten eine Antwort mit deinem <strong>API-Key</strong> (eine Zahl).
+              Diesen unten ins Feld <em>„CallMeBot apikey"</em> einfügen.</li>
+            <li>Unten bei <em>„Telefonnummer"</em> deine <strong>eigene</strong> WhatsApp-Nummer mit Ländervorwahl eintragen
+              (z. B. <span class="font-mono text-slate-200">+4915123456789</span>).</li>
+            <li>Auf <strong>Benachrichtigungen speichern</strong> klicken, dann oben rechts <strong>Test senden</strong> –
+              die Testnachricht sollte in WhatsApp ankommen.</li>
+          </ol>
+        </details>
         <div class="grid gap-3 sm:grid-cols-2">
           <label class="block text-sm">
             <span class="text-slate-400">Telefonnummer (mit Ländervorwahl)</span>
