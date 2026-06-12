@@ -12,6 +12,7 @@
   "dependencies": {
     "@vite-pwa/nuxt": "^1.0.4",
     "chart.js": "^4.4.7",
+    "nodemailer": "^6.9.16",
     "nuxt": "^4.0.0",
     "nuxt-auth-utils": "^0.5.20",
     "pg": "^8.13.1",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
+    "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.11.10",
     "tailwindcss": "^4.0.0"
   }

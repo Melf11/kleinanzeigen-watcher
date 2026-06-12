@@ -6,6 +6,9 @@ export interface UserRow {
   username: string
   password_hash: string
   klaz_api_key: string | null
+  email: string | null
+  email_verified: boolean
+  pending_email: string | null
   tg_bot_token: string | null
   tg_chat_id: string | null
   wa_phone: string | null
@@ -28,13 +31,42 @@ export function getUserByUsername(username: string) {
   return queryOne<UserRow>('SELECT * FROM users WHERE username = $1', [username])
 }
 
-export async function createUser(username: string, password: string): Promise<UserRow> {
+export function getUserByEmail(email: string) {
+  return queryOne<UserRow>('SELECT * FROM users WHERE lower(email) = lower($1)', [email])
+}
+
+export async function createUser(
+  username: string,
+  email: string,
+  password: string,
+): Promise<UserRow> {
   const passwordHash = await hashPassword(password)
   const rows = await query<UserRow>(
-    'INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING *',
-    [username, passwordHash],
+    'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING *',
+    [username, email, passwordHash],
   )
   return rows[0]
+}
+
+export async function setEmailVerified(id: string | number): Promise<void> {
+  await query('UPDATE users SET email_verified = true WHERE id = $1', [id])
+}
+
+export async function setUserPassword(id: string | number, password: string): Promise<void> {
+  const passwordHash = await hashPassword(password)
+  await query('UPDATE users SET password_hash = $2 WHERE id = $1', [id, passwordHash])
+}
+
+export async function setPendingEmail(id: string | number, email: string): Promise<void> {
+  await query('UPDATE users SET pending_email = $2 WHERE id = $1', [id, email])
+}
+
+/** Apply a verified email change: move pending_email to email, mark verified. */
+export async function applyEmailChange(id: string | number, email: string): Promise<void> {
+  await query(
+    'UPDATE users SET email = $2, pending_email = NULL, email_verified = true WHERE id = $1',
+    [id, email],
+  )
 }
 
 export async function setUserApiKey(id: string | number, apiKey: string | null): Promise<void> {

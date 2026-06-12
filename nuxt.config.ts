@@ -27,8 +27,24 @@ export default defineNuxtConfig({
         secure: process.env.NODE_ENV === 'production',
       },
     },
+    // SMTP for account emails (verification, password reset). NUXT_SMTP_*.
+    // Leave host empty in dev → emails are logged to the console instead of sent.
+    smtp: {
+      host: '',
+      port: '587',
+      user: '',
+      pass: '',
+      from: '',
+      secure: '',
+    },
     public: {
       appName: 'Kleinanzeigen Preis-Watcher',
+      // Public base URL used to build email links. NUXT_PUBLIC_APP_URL.
+      appUrl: '',
+      // Baked in at image build time (see Dockerfile build args). Empty in local dev.
+      appVersion: '', // NUXT_PUBLIC_APP_VERSION
+      gitSha: '', // NUXT_PUBLIC_GIT_SHA
+      buildTime: '', // NUXT_PUBLIC_BUILD_TIME
     },
   },
 

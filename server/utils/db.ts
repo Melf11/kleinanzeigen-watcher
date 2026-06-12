@@ -160,6 +160,25 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS tg_bot_token TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS tg_chat_id   TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS wa_phone     TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS wa_apikey    TEXT;
+
+-- Email verification + secure account management.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email          TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_email  TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique ON users (lower(email)) WHERE email IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS auth_tokens (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind       TEXT NOT NULL,             -- 'verify_email' | 'reset_password' | 'change_email'
+  token_hash TEXT NOT NULL,
+  email      TEXT,                      -- target email for change_email / verify
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at    TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_auth_tokens_hash ON auth_tokens (token_hash);
+CREATE INDEX IF NOT EXISTS idx_auth_tokens_user ON auth_tokens (user_id, kind);
 `
 
 /**
@@ -191,10 +210,10 @@ async function seedAdmin(): Promise<void> {
 
   const passwordHash = await hashPassword(password)
   const seedToken = config.klazApiKey || null
-  await query('INSERT INTO users (username, password_hash, klaz_api_key) VALUES ($1, $2, $3)', [
-    username,
-    passwordHash,
-    seedToken,
-  ])
+  // Seeded admin is pre-verified (no email needed to log in).
+  await query(
+    'INSERT INTO users (username, password_hash, klaz_api_key, email_verified) VALUES ($1, $2, $3, true)',
+    [username, passwordHash, seedToken],
+  )
   console.log(`[db] seeded default user "${username}"`)
 }

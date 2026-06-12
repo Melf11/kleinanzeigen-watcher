@@ -10,8 +10,14 @@ const password = ref('')
 const error = ref('')
 const loading = ref(false)
 
+// Shown when login is blocked because the email isn't verified yet.
+const unverifiedEmail = ref('')
+const resendMsg = ref('')
+
 async function submit() {
   error.value = ''
+  resendMsg.value = ''
+  unverifiedEmail.value = ''
   loading.value = true
   try {
     await $fetch('/api/auth/login', {
@@ -19,12 +25,29 @@ async function submit() {
       body: { username: username.value, password: password.value },
     })
     await refreshSession()
-    const redirect = (route.query.redirect as string) || '/'
-    await router.push(redirect)
+    await router.push((route.query.redirect as string) || '/')
   } catch (e: any) {
-    error.value = e?.data?.statusMessage || e?.statusMessage || 'Login fehlgeschlagen'
+    if (e?.data?.data?.code === 'EMAIL_UNVERIFIED') {
+      unverifiedEmail.value = e.data.data.email || ''
+      error.value = 'Bitte bestätige zuerst deine E-Mail-Adresse.'
+    } else {
+      error.value = e?.data?.statusMessage || e?.statusMessage || 'Login fehlgeschlagen'
+    }
   } finally {
     loading.value = false
+  }
+}
+
+async function resend() {
+  resendMsg.value = ''
+  try {
+    await $fetch('/api/auth/resend-verification', {
+      method: 'POST',
+      body: { email: unverifiedEmail.value },
+    })
+    resendMsg.value = 'Bestätigungs-E-Mail erneut gesendet.'
+  } catch (e: any) {
+    resendMsg.value = e?.data?.statusMessage || 'Senden fehlgeschlagen'
   }
 }
 </script>
@@ -35,18 +58,22 @@ async function submit() {
 
     <div v-if="error" class="rounded-md bg-red-500/10 border border-red-500/30 px-3 py-2 text-sm text-red-300">
       {{ error }}
+      <button v-if="unverifiedEmail" type="button" class="ml-1 underline" @click="resend">
+        Erneut senden
+      </button>
+    </div>
+    <div v-if="resendMsg" class="rounded-md bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 text-sm text-emerald-300">
+      {{ resendMsg }}
     </div>
 
     <label class="block text-sm">
       <span class="text-slate-400">Benutzername</span>
-      <input v-model="username" type="text" autocomplete="username" required
-        class="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 outline-none focus:border-brand-500" />
+      <input v-model="username" type="text" autocomplete="username" required class="input" />
     </label>
 
     <label class="block text-sm">
       <span class="text-slate-400">Passwort</span>
-      <input v-model="password" type="password" autocomplete="current-password" required
-        class="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 outline-none focus:border-brand-500" />
+      <input v-model="password" type="password" autocomplete="current-password" required class="input" />
     </label>
 
     <button type="submit" :disabled="loading"
@@ -54,9 +81,9 @@ async function submit() {
       {{ loading ? 'Anmelden…' : 'Anmelden' }}
     </button>
 
-    <p class="text-center text-sm text-slate-400">
-      Noch kein Konto?
+    <div class="flex items-center justify-between text-sm text-slate-400">
       <NuxtLink to="/register" class="text-brand-400 hover:underline">Registrieren</NuxtLink>
-    </p>
+      <NuxtLink to="/forgot-password" class="hover:underline">Passwort vergessen?</NuxtLink>
+    </div>
   </form>
 </template>

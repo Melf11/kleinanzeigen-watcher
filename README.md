@@ -37,6 +37,10 @@ PostgreSQL speichert.
   **Aktuell verfügbar** und **Gesamt inkl. entfernte** (Langzeit-Auswertung über Jahre)
 - **Multi-User:** jeder Benutzer hinterlegt seinen **eigenen API-Token** und sieht nur
   seine eigenen Suchen/Daten
+- **Sichere Accountverwaltung:** Registrierung mit **E-Mail-Verifizierung** (Login erst
+  nach Bestätigung), **Passwort-Reset** und **E-Mail/Passwort ändern** per E-Mail-Link;
+  gehashte Single-Use-Tokens mit Ablauf, Rate-Limiting und Anti-Enumeration. E-Mail-Versand
+  per SMTP (ohne SMTP-Config werden Links in der Konsole geloggt — praktisch für Dev)
 
 ## Schnellstart (Docker)
 
@@ -142,6 +146,15 @@ npm run dev                # http://localhost:3000
 | `NUXT_KLAZ_API_KEY` | Optional: Seed-Token für den Dev-Admin (sonst pro Benutzer unter /settings) |
 | `POSTGRES_USER/PASSWORD/DB` | Postgres-Container |
 | `APP_PORT` / `DB_PORT` | Host-Ports (Default 3000 / 5432) |
+| `NUXT_SMTP_*` | E-Mail-Versand (Host/Port/User/Pass/From/Secure). Leer = Konsolen-Log |
+| `NUXT_PUBLIC_APP_URL` | Öffentliche Basis-URL für die Links in E-Mails |
+
+### E-Mail über Netcup-Webhosting (Plesk)
+Postfach im Webhosting anlegen (z. B. `noreply@deinedomain.de`). Die SMTP-Daten stehen in
+Plesk unter *Mail → E-Mail-Adresse → E-Mail-Client einrichten*: Host meist
+`mail.deinedomain.de`, Port **587** (STARTTLS, `NUXT_SMTP_SECURE=false`) oder **465**
+(`=true`), Benutzer = volle Adresse, Passwort = Postfach-Passwort. Diese Werte gehören in
+die **Server-`.env`** (nicht in GitHub Secrets) — wie DB-Passwort und Session-Secret.
 
 ## Credits
 Jeder Suchlauf kostet **1 Credit pro abgefragter Seite** (`max_pages`). Default ist

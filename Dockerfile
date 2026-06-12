@@ -17,6 +17,14 @@ ENV NODE_ENV=production
 ENV NITRO_PORT=3000
 ENV NITRO_HOST=0.0.0.0
 
+# Version metadata (passed by the CI build; defaults are fine for local builds).
+ARG APP_VERSION=dev
+ARG GIT_SHA=
+ARG BUILD_TIME=
+ENV NUXT_PUBLIC_APP_VERSION=$APP_VERSION
+ENV NUXT_PUBLIC_GIT_SHA=$GIT_SHA
+ENV NUXT_PUBLIC_BUILD_TIME=$BUILD_TIME
+
 COPY --from=builder /app/.output ./.output
 
 EXPOSE 3000

@@ -9,6 +9,9 @@ export default defineEventHandler(async (event) => {
   return {
     id: user.id,
     username: user.username,
+    email: user.email,
+    emailVerified: user.email_verified,
+    pendingEmail: user.pending_email,
     hasToken: !!user.klaz_api_key,
     tokenMasked: maskToken(user.klaz_api_key),
     telegram: {
