@@ -33,7 +33,10 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.IMAGE }}
+          # Push the exact git tag (e.g. v1.0.1) so it matches what the deploy
+          # job pulls (github.ref_name). Plus the bare semver and "latest".
           tags: |
+            type=ref,event=tag
             type=semver,pattern={{version}}
             type=raw,value=latest
 
