@@ -12,7 +12,7 @@ interface AdminUser {
 const { formatDate } = useFormat()
 const router = useRouter()
 
-const { data: me } = await useFetch<{ id: string; isAdmin?: boolean }>('/api/me')
+const { data: me } = await useFetch<{ id: string; email: string | null; isAdmin?: boolean }>('/api/me')
 // Client-side guard (the API also enforces admin on every call).
 if (!me.value?.isAdmin) {
   await router.replace('/')
@@ -20,6 +20,38 @@ if (!me.value?.isAdmin) {
 
 const { data: users, refresh, pending } = await useFetch<AdminUser[]>('/api/admin/users')
 const error = ref('')
+
+// --- Mailserver test ---
+interface MailStatus {
+  configured: boolean
+  host: string | null
+  port: number
+  secure: boolean
+  user: string | null
+  from: string | null
+}
+const { data: mail } = await useFetch<MailStatus>('/api/admin/mail/status')
+const mailTo = ref(me.value?.email ?? '')
+const mailBusy = ref(false)
+const mailMsg = ref('')
+const mailErr = ref('')
+
+async function sendMailTest() {
+  mailBusy.value = true
+  mailMsg.value = ''
+  mailErr.value = ''
+  try {
+    const r = await $fetch<{ message?: string }>('/api/admin/mail/test', {
+      method: 'POST',
+      body: { to: mailTo.value },
+    })
+    mailMsg.value = r.message || 'Gesendet.'
+  } catch (e: any) {
+    mailErr.value = e?.data?.statusMessage || 'Test fehlgeschlagen'
+  } finally {
+    mailBusy.value = false
+  }
+}
 
 // Create form
 const nu = reactive({ username: '', email: '', password: '', isAdmin: false })
@@ -78,6 +110,44 @@ async function remove(u: AdminUser) {
     </div>
 
     <div v-if="error" class="rounded-md bg-red-500/10 border border-red-500/30 px-3 py-2 text-sm text-red-300">{{ error }}</div>
+
+    <!-- Mailserver -->
+    <section class="rounded-xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-medium">Mailserver</h2>
+        <span v-if="mail?.configured" class="text-xs text-emerald-400">konfiguriert</span>
+        <span v-else class="text-xs text-amber-400">kein SMTP – E-Mails werden nur geloggt</span>
+      </div>
+
+      <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+        <dt class="text-slate-500">Host</dt>
+        <dd class="font-mono">{{ mail?.host || '–' }}<span v-if="mail?.host">:{{ mail?.port }}</span></dd>
+        <dt class="text-slate-500">Verschlüsselung</dt>
+        <dd class="font-mono">{{ mail?.secure ? 'SSL/TLS (465)' : 'STARTTLS' }}</dd>
+        <dt class="text-slate-500">Absender</dt>
+        <dd class="font-mono">{{ mail?.from || '–' }}</dd>
+        <dt class="text-slate-500">Login</dt>
+        <dd class="font-mono">{{ mail?.user || '–' }}</dd>
+      </dl>
+
+      <div v-if="mailMsg" class="rounded-md bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 text-sm text-emerald-300">{{ mailMsg }}</div>
+      <div v-if="mailErr" class="rounded-md bg-red-500/10 border border-red-500/30 px-3 py-2 text-sm text-red-300 break-words">{{ mailErr }}</div>
+
+      <div class="flex flex-wrap items-end gap-2">
+        <label class="block text-sm flex-1 min-w-56">
+          <span class="text-slate-400">Test-E-Mail an</span>
+          <input v-model="mailTo" type="email" placeholder="du@example.com" class="input" />
+        </label>
+        <button :disabled="mailBusy || !mailTo" @click="sendMailTest"
+          class="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50">
+          {{ mailBusy ? 'Sende…' : 'Test senden' }}
+        </button>
+      </div>
+      <p class="text-xs text-slate-500">
+        Sendet eine Test-Nachricht über die SMTP-Konfiguration (<span class="font-mono">NUXT_SMTP_*</span>).
+        Fehler (z. B. <span class="font-mono">ECONNREFUSED</span>, Auth <span class="font-mono">535</span>) werden hier im Klartext angezeigt.
+      </p>
+    </section>
 
     <!-- Liste -->
     <section class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60">

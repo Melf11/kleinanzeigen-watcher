@@ -39,7 +39,9 @@ PostgreSQL speichert.
   seine eigenen Suchen/Daten
 - **Admin-Nutzerverwaltung:** Admins verwalten unter `/admin/users` alle Konten
   (anlegen, Rolle/Verifizierung umschalten, Passwort zurücksetzen, löschen) — mit
-  Schutz gegen Selbst-Löschen und Entzug des letzten Admins. Der erste/seeded User ist Admin
+  Schutz gegen Selbst-Löschen und Entzug des letzten Admins. Der erste/seeded User ist Admin.
+  Enthält außerdem einen **Mailserver-Test** (zeigt die SMTP-Konfig ohne Passwort und sendet
+  eine Test-Mail; SMTP-Fehler wie `ECONNREFUSED`/`535` werden im Klartext angezeigt)
 - **Sichere Accountverwaltung:** Registrierung mit **E-Mail-Verifizierung** (Login erst
   nach Bestätigung), **Passwort-Reset** und **E-Mail/Passwort ändern** per E-Mail-Link;
   gehashte Single-Use-Tokens mit Ablauf, Rate-Limiting und Anti-Enumeration. E-Mail-Versand

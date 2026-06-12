@@ -41,6 +41,38 @@ async function sendMail(opts: { to: string; subject: string; text: string; html?
   await t.sendMail({ from, ...opts })
 }
 
+/** Current SMTP config for the admin view (never includes the password). */
+export function getSmtpStatus() {
+  const s = useRuntimeConfig().smtp
+  const port = Number(s?.port) || 587
+  return {
+    configured: !!s?.host,
+    host: s?.host || null,
+    port,
+    secure: s?.secure === true || s?.secure === 'true' || port === 465,
+    user: s?.user || null,
+    from: s?.from || s?.user || null,
+  }
+}
+
+/** Send a test email. Returns {logged:true} if no SMTP is configured (dev). */
+export async function sendTestMail(to: string): Promise<{ sent: boolean; logged: boolean }> {
+  const t = getTransport()
+  if (!t) {
+    console.log(`\n[email:LOG] → ${to}\nSubject: Test\n(SMTP not configured — logged only)\n`)
+    return { sent: false, logged: true }
+  }
+  const smtp = useRuntimeConfig().smtp
+  const from = smtp?.from || smtp?.user || 'noreply@localhost'
+  await t.sendMail({
+    from,
+    to,
+    subject: 'Test – Kleinanzeigen Preis-Watcher',
+    text: 'Dies ist eine Test-E-Mail. Erhältst du sie, ist der Mailversand korrekt eingerichtet. ✅',
+  })
+  return { sent: true, logged: false }
+}
+
 const appName = 'Kleinanzeigen Preis-Watcher'
 
 export function sendVerificationEmail(to: string, link: string) {
