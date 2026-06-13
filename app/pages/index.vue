@@ -1,5 +1,21 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'public' })
+
+const { formatPriceShort, fromNow } = useFormat()
+
+interface PublicSearch {
+  public_slug: string
+  name: string
+  query: string
+  include_keywords: string
+  active_count: number
+  price_median: number | null
+  price_min: number | null
+  last_ok_run: string | null
+}
+
+const { data: publicSearches } = await useFetch<PublicSearch[]>('/api/public/searches')
+const featured = computed(() => (publicSearches.value ?? []).slice(0, 6))
 </script>
 
 <template>
@@ -50,6 +66,40 @@ definePageMeta({ layout: 'public' })
             Zusammenfassungen per Telegram oder WhatsApp im gewählten Intervall.
           </p>
         </div>
+      </div>
+    </section>
+
+    <!-- Öffentliche Suchen -->
+    <section v-if="featured.length" class="mx-auto max-w-5xl px-4 pb-24">
+      <div class="mb-5 flex items-end justify-between">
+        <div>
+          <h2 class="text-xl font-semibold">Öffentliche Suchen</h2>
+          <p class="text-sm text-slate-400">Von Nutzern geteilte Auswertungen – ohne Login einsehbar.</p>
+        </div>
+        <NuxtLink to="/explore" class="shrink-0 text-sm text-brand-400 hover:underline">Alle ansehen →</NuxtLink>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <NuxtLink v-for="s in featured" :key="s.public_slug" :to="`/p/${s.public_slug}`"
+          class="rounded-xl border border-slate-800 bg-slate-900/60 p-5 hover:border-slate-700 transition">
+          <div class="font-medium">{{ s.name }}</div>
+          <p class="mt-0.5 truncate text-xs text-slate-500">„{{ s.query }}"<span v-if="s.include_keywords"> · {{ s.include_keywords }}</span></p>
+          <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+            <div>
+              <div class="text-lg font-semibold">{{ s.active_count ?? 0 }}</div>
+              <div class="text-xs text-slate-500">Anzeigen</div>
+            </div>
+            <div>
+              <div class="text-lg font-semibold text-brand-400">{{ formatPriceShort(s.price_median) }}</div>
+              <div class="text-xs text-slate-500">Median</div>
+            </div>
+            <div>
+              <div class="text-sm font-medium text-slate-300">{{ formatPriceShort(s.price_min) }}</div>
+              <div class="text-xs text-slate-500">ab</div>
+            </div>
+          </div>
+          <div class="mt-4 text-xs text-slate-500">Aktualisiert {{ fromNow(s.last_ok_run) }}</div>
+        </NuxtLink>
       </div>
     </section>
   </div>
