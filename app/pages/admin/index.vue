@@ -128,7 +128,7 @@ async function remove(u: AdminUser) {
       <h2 class="text-lg font-medium">Nutzerverwaltung</h2>
 
       <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60">
-        <table class="w-full text-sm">
+        <table class="w-full min-w-[680px] text-sm">
           <thead class="border-b border-slate-800 text-left text-xs text-slate-500">
             <tr>
               <th class="px-4 py-3">Benutzer</th>

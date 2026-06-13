@@ -29,6 +29,11 @@ body {
   }
 }
 
+/* iPhone safe-area helpers (work with viewport-fit=cover). */
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.h-safe-b { height: env(safe-area-inset-bottom); }
+
 /* Keep browser-autofilled fields on the dark theme (otherwise white-on-white).
    The inset box-shadow overrides the browser's light autofill background. */
 input:-webkit-autofill,

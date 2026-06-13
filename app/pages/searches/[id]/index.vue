@@ -120,11 +120,11 @@ const showExcluded = ref(false)
           <span v-if="search.exclude_keywords"> · ohne: {{ search.exclude_keywords }}</span>
         </p>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto">
         <NuxtLink :to="`/searches/${id}/edit`" class="btn-secondary">Bearbeiten</NuxtLink>
         <button class="btn-secondary text-red-300 hover:bg-red-500/10" @click="remove">Löschen</button>
         <button :disabled="running"
-          class="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+          class="ml-auto rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60 sm:ml-0"
           @click="runNow">
           {{ running ? 'Läuft…' : 'Jetzt aktualisieren' }}
         </button>

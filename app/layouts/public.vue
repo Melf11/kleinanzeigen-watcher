@@ -4,13 +4,13 @@ const { loggedIn } = useUserSession()
 
 <template>
   <div class="min-h-screen flex flex-col">
-    <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-20">
-      <div class="mx-auto max-w-6xl px-4 h-14 flex items-center gap-6">
+    <header class="pt-safe border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-20">
+      <div class="mx-auto max-w-6xl px-4 h-14 flex items-center gap-4 sm:gap-6">
         <NuxtLink to="/" class="flex items-center gap-2 font-semibold">
           <span class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-brand-600 text-white text-sm">KA</span>
           <span class="hidden sm:inline">Preis-Watcher</span>
         </NuxtLink>
-        <nav class="flex items-center gap-4 text-sm text-slate-300">
+        <nav class="hidden items-center gap-4 text-sm text-slate-300 sm:flex">
           <NuxtLink to="/explore" class="hover:text-white" active-class="text-white">Öffentliche Suchen</NuxtLink>
         </nav>
         <div class="ml-auto flex items-center gap-2 text-sm">

@@ -13,7 +13,7 @@ const badge: Record<string, { label: string; cls: string }> = {
 </script>
 
 <template>
-  <div :class="['flex items-center gap-4 px-5 py-3', ad.status === 'removed' ? 'opacity-50' : '', ad.excluded ? 'opacity-60' : '']">
+  <div :class="['flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-5', ad.status === 'removed' ? 'opacity-50' : '', ad.excluded ? 'opacity-60' : '']">
     <img v-if="ad.image_url" :src="ad.image_url" alt="" class="h-12 w-12 shrink-0 rounded object-cover bg-slate-800" loading="lazy" />
     <div v-else class="h-12 w-12 shrink-0 rounded bg-slate-800" />
 
@@ -27,9 +27,11 @@ const badge: Record<string, { label: string; cls: string }> = {
       </div>
     </div>
 
-    <PriceSparkline :values="ad.history.map((h: any) => h.price)" />
+    <div class="hidden sm:block">
+      <PriceSparkline :values="ad.history.map((h: any) => h.price)" />
+    </div>
 
-    <div class="w-28 shrink-0 text-right">
+    <div class="w-24 shrink-0 text-right sm:w-28">
       <div :class="['font-semibold', ad.excluded ? 'text-slate-400 line-through' : '']">{{ formatPrice(ad.current_price) }}</div>
       <span v-if="!ad.excluded && badge[ad.priceChange]?.label"
         :class="['mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px]', badge[ad.priceChange].cls]">

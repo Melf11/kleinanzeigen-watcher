@@ -5,6 +5,13 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-01-01',
   devtools: { enabled: true },
 
+  app: {
+    head: {
+      // viewport-fit=cover lets us use the iPhone safe-area insets.
+      viewport: 'width=device-width, initial-scale=1, viewport-fit=cover',
+    },
+  },
+
   modules: ['nuxt-auth-utils', '@vite-pwa/nuxt'],
 
   css: ['~/assets/css/main.css'],
