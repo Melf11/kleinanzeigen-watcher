@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{ ad: any }>()
+const props = defineProps<{ ad: any; readonly?: boolean }>()
 const emit = defineEmits<{ toggle: [any] }>()
 
 const { formatPrice, fromNow } = useFormat()
@@ -38,7 +38,7 @@ const badge: Record<string, { label: string; cls: string }> = {
       </span>
     </div>
 
-    <button
+    <button v-if="!readonly"
       class="shrink-0 rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
       :title="ad.excluded ? 'Wieder in die Statistik aufnehmen' : 'Aus der Statistik streichen'"
       @click="emit('toggle', ad)">

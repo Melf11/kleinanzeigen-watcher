@@ -156,6 +156,9 @@ CREATE TABLE IF NOT EXISTS app_cache (
 -- Notifications + time-of-day scheduling (added later; idempotent migrations).
 ALTER TABLE searches ADD COLUMN IF NOT EXISTS notify   TEXT NOT NULL DEFAULT 'off';
 ALTER TABLE searches ADD COLUMN IF NOT EXISTS run_time TEXT;
+ALTER TABLE searches ADD COLUMN IF NOT EXISTS is_public   BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE searches ADD COLUMN IF NOT EXISTS public_slug TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_searches_slug ON searches (public_slug) WHERE public_slug IS NOT NULL;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS tg_bot_token TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS tg_chat_id   TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS wa_phone     TEXT;

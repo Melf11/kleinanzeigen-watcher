@@ -47,6 +47,10 @@ PostgreSQL speichert.
   gehashte Single-Use-Tokens mit Ablauf, Rate-Limiting und Anti-Enumeration. E-Mail-Versand
   per SMTP (ohne SMTP-Config werden Links in der Konsole geloggt — praktisch für Dev)
 
+- **Öffentliche Landingpage** (`/`) und **teilbare Suchen:** jede Suche lässt sich öffentlich
+  schalten und unter `/p/<slug>` ohne Login als read-only Auswertung teilen; `/explore` listet
+  alle öffentlichen Suchen mit Filter/Suchfunktion. Keine Eigentümer-Daten werden geteilt.
+
 ## Schnellstart (Docker)
 
 ```bash

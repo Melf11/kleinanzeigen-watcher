@@ -58,6 +58,29 @@ const medianDelta = computed(() => {
   return statMedian.value - previous.value.price_median
 })
 
+// Public sharing
+const publicUrl = computed(() =>
+  search.value?.public_slug && import.meta.client
+    ? `${window.location.origin}/p/${search.value.public_slug}`
+    : '',
+)
+const copied = ref(false)
+async function togglePublic() {
+  const res = await $fetch<{ is_public: boolean }>(`/api/searches/${id}/visibility`, {
+    method: 'POST',
+    body: { public: !search.value?.is_public },
+  })
+  await refreshDetail()
+  copied.value = false
+  return res
+}
+async function copyPublicUrl() {
+  if (!publicUrl.value) return
+  await navigator.clipboard.writeText(publicUrl.value)
+  copied.value = true
+  setTimeout(() => (copied.value = false), 2000)
+}
+
 async function toggleExclude(ad: any) {
   await $fetch(`/api/searches/${id}/ads`, {
     method: 'PATCH',
@@ -89,7 +112,7 @@ const showExcluded = ref(false)
     <!-- Header -->
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div>
-        <NuxtLink to="/" class="text-sm text-slate-500 hover:text-slate-300">← Alle Suchen</NuxtLink>
+        <NuxtLink to="/dashboard" class="text-sm text-slate-500 hover:text-slate-300">← Alle Suchen</NuxtLink>
         <h1 class="mt-1 text-xl font-semibold">{{ search.name }}</h1>
         <p class="text-sm text-slate-400">
           „{{ search.query }}"
@@ -105,6 +128,21 @@ const showExcluded = ref(false)
           @click="runNow">
           {{ running ? 'Läuft…' : 'Jetzt aktualisieren' }}
         </button>
+      </div>
+    </div>
+
+    <!-- Öffentlich teilen -->
+    <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" class="checkbox" :checked="search.is_public" @change="togglePublic" />
+          <span class="text-slate-300">Öffentlich teilen</span>
+          <span class="text-xs text-slate-500">– read-only Auswertung ohne Login einsehbar</span>
+        </label>
+        <div v-if="search.is_public && publicUrl" class="flex items-center gap-2">
+          <a :href="publicUrl" target="_blank" class="max-w-xs truncate text-sm text-brand-400 hover:underline">{{ publicUrl }}</a>
+          <button class="btn-secondary" @click="copyPublicUrl">{{ copied ? 'Kopiert ✓' : 'Link kopieren' }}</button>
+        </div>
       </div>
     </div>
 

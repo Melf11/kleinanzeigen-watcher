@@ -25,7 +25,7 @@ async function submit() {
       body: { username: username.value, password: password.value },
     })
     await refreshSession()
-    await router.push((route.query.redirect as string) || '/')
+    await router.push((route.query.redirect as string) || '/dashboard')
   } catch (e: any) {
     if (e?.data?.data?.code === 'EMAIL_UNVERIFIED') {
       unverifiedEmail.value = e.data.data.email || ''

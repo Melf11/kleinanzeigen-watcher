@@ -16,13 +16,14 @@ async function logout() {
   <div class="min-h-screen flex flex-col">
     <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-20">
       <div class="mx-auto max-w-7xl px-4 h-14 flex items-center gap-6">
-        <NuxtLink to="/" class="flex items-center gap-2 font-semibold">
+        <NuxtLink to="/dashboard" class="flex items-center gap-2 font-semibold">
           <span class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-brand-600 text-white text-sm">KA</span>
           <span class="hidden sm:inline">Preis-Watcher</span>
         </NuxtLink>
 
         <nav class="flex items-center gap-4 text-sm text-slate-300">
-          <NuxtLink to="/" class="hover:text-white" active-class="text-white">Suchen</NuxtLink>
+          <NuxtLink to="/dashboard" class="hover:text-white" active-class="text-white">Suchen</NuxtLink>
+          <NuxtLink to="/explore" class="hover:text-white" active-class="text-white">Öffentlich</NuxtLink>
           <NuxtLink to="/searches/new" class="hover:text-white" active-class="text-white">Neue Suche</NuxtLink>
           <NuxtLink to="/settings" class="hover:text-white" active-class="text-white">Einstellungen</NuxtLink>
           <NuxtLink v-if="me?.isAdmin" to="/admin"

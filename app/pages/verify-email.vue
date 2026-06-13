@@ -39,7 +39,7 @@ onMounted(async () => {
       <div class="text-3xl">✅</div>
       <h1 class="text-lg font-semibold">{{ message }}</h1>
       <button class="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-        @click="router.push('/')">Zum Dashboard</button>
+        @click="router.push('/dashboard')">Zum Dashboard</button>
     </template>
     <template v-else>
       <div class="text-3xl">⚠️</div>

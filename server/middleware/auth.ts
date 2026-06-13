@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
   const path = getRequestURL(event).pathname
   if (!path.startsWith('/api/')) return
   if (path.startsWith('/api/auth/')) return
+  if (path.startsWith('/api/public/')) return
   if (PUBLIC_API_PATHS.has(path)) return
 
   const session = await getUserSession(event)

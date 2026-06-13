@@ -23,6 +23,8 @@ export interface SearchRow {
   enabled: boolean
   notify: string
   run_time: string | null
+  is_public: boolean
+  public_slug: string | null
   created_at: string
   last_run_at: string | null
   next_run_at: string
@@ -154,6 +156,60 @@ export async function deleteSearch(id: string, userId: string): Promise<boolean>
     userId,
   ])
   return rows.length > 0
+}
+
+import { randomBytes } from 'node:crypto'
+
+/** Toggle a search's public visibility; generates a slug on first publish. */
+export async function setSearchVisibility(
+  id: string,
+  userId: string,
+  isPublic: boolean,
+): Promise<{ is_public: boolean; public_slug: string | null } | null> {
+  const search = await getSearchForUser(id, userId)
+  if (!search) return null
+  let slug = search.public_slug
+  if (isPublic && !slug) slug = randomBytes(6).toString('hex')
+  const rows = await query<{ is_public: boolean; public_slug: string | null }>(
+    'UPDATE searches SET is_public = $3, public_slug = $4 WHERE id = $1 AND user_id = $2 RETURNING is_public, public_slug',
+    [id, userId, isPublic, slug],
+  )
+  return rows[0] ?? null
+}
+
+export function getPublicSearchBySlug(slug: string) {
+  return queryOne<SearchRow>('SELECT * FROM searches WHERE public_slug = $1 AND is_public = true', [slug])
+}
+
+export interface PublicSearchListRow {
+  public_slug: string
+  name: string
+  query: string
+  include_keywords: string
+  active_count: number
+  price_median: number | null
+  price_min: number | null
+  last_ok_run: string | null
+}
+
+/** Public, filterable list of shared searches. */
+export function listPublicSearches(q?: string) {
+  const term = q?.trim() ? `%${q.trim()}%` : null
+  return query<PublicSearchListRow>(
+    `SELECT s.public_slug, s.name, s.query, s.include_keywords,
+            (SELECT count(*)::int FROM ads a WHERE a.search_id = s.id AND a.status = 'active' AND NOT a.excluded) AS active_count,
+            r.price_median, r.price_min, r.run_at AS last_ok_run
+       FROM searches s
+       LEFT JOIN LATERAL (
+         SELECT * FROM search_runs sr WHERE sr.search_id = s.id AND sr.status = 'ok'
+          ORDER BY sr.run_at DESC LIMIT 1
+       ) r ON true
+      WHERE s.is_public = true
+        AND ($1::text IS NULL OR s.name ILIKE $1 OR s.query ILIKE $1 OR s.include_keywords ILIKE $1)
+      ORDER BY r.run_at DESC NULLS LAST
+      LIMIT 100`,
+    [term],
+  )
 }
 
 /** Searches that are enabled and due for a poll. */
