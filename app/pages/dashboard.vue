@@ -40,7 +40,7 @@ async function runNow(id: string) {
       <NuxtLink to="/searches/new" class="text-brand-400 hover:underline">Lege deine erste Suche an.</NuxtLink>
     </div>
 
-    <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <div v-for="s in searches" :key="s.id"
         class="group rounded-xl border border-slate-800 bg-slate-900/60 p-5 hover:border-slate-700 transition">
         <div class="flex items-start justify-between gap-2">
@@ -78,7 +78,7 @@ async function runNow(id: string) {
             {{ running[s.id] ? 'läuft…' : 'Aktualisieren' }}
           </button>
         </div>
-        <p v-if="s.last_run_status === 'error' && s.last_error" class="mt-1 truncate text-xs text-red-400/80" :title="s.last_error">
+        <p v-if="s.last_run_status === 'error' && s.last_error" class="mt-1 break-words text-xs text-red-400/80">
           {{ s.last_error }}
         </p>
       </div>

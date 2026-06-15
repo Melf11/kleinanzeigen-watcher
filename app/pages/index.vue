@@ -44,7 +44,7 @@ const featured = computed(() => (publicSearches.value ?? []).slice(0, 6))
 
     <!-- Features -->
     <section class="mx-auto max-w-5xl px-4 pb-24">
-      <div class="grid gap-5 sm:grid-cols-3">
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-6">
           <div class="text-2xl">📈</div>
           <h3 class="mt-3 font-semibold">Preis-Historie</h3>
@@ -79,7 +79,7 @@ const featured = computed(() => (publicSearches.value ?? []).slice(0, 6))
         <NuxtLink to="/explore" class="shrink-0 text-sm text-brand-400 hover:underline">Alle ansehen →</NuxtLink>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <NuxtLink v-for="s in featured" :key="s.public_slug" :to="`/p/${s.public_slug}`"
           class="rounded-xl border border-slate-800 bg-slate-900/60 p-5 hover:border-slate-700 transition">
           <div class="font-medium">{{ s.name }}</div>

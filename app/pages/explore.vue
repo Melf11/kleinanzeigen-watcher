@@ -45,7 +45,7 @@ watch(q, () => {
       Keine öffentlichen Suchen gefunden.
     </div>
 
-    <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <NuxtLink v-for="s in searches" :key="s.public_slug" :to="`/p/${s.public_slug}`"
         class="rounded-xl border border-slate-800 bg-slate-900/60 p-5 hover:border-slate-700 transition">
         <div class="font-medium">{{ s.name }}</div>
