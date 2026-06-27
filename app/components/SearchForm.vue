@@ -104,7 +104,6 @@ interface CategoryNode {
 const categories = ref<CategoryNode[]>([])
 const mainCategory = ref('')
 const subCategory = ref('')
-let categoriesReady = false
 
 const subOptions = computed(
   () => categories.value.find((c) => c.id === mainCategory.value)?.children ?? [],
@@ -114,16 +113,13 @@ function applyCategoryToForm() {
   form.category_id = subCategory.value || mainCategory.value || null
 }
 
-// When the user changes the main category, reset the sub and update the form.
-watch(mainCategory, () => {
-  if (!categoriesReady) return
+// Only react to genuine user input via @change — NOT to programmatic value
+// changes during preselect (which would otherwise wipe the restored sub, since
+// watchers fire deferred, after any "ready" flag is already set).
+function onMainChange() {
   subCategory.value = ''
   applyCategoryToForm()
-})
-watch(subCategory, () => {
-  if (!categoriesReady) return
-  applyCategoryToForm()
-})
+}
 
 // Resolve the stored category_id back into the two selects (for edit).
 function preselectFromForm() {
@@ -149,8 +145,6 @@ onMounted(async () => {
     preselectFromForm()
   } catch {
     // Categories optional — form still works without them.
-  } finally {
-    categoriesReady = true
   }
 })
 
@@ -210,14 +204,14 @@ function onSubmit() {
       <div class="grid gap-4 sm:grid-cols-2">
         <label class="block text-sm">
           <span class="text-slate-400">Kategorie</span>
-          <select v-model="mainCategory" class="input" :disabled="!categories.length">
+          <select v-model="mainCategory" class="input" :disabled="!categories.length" @change="onMainChange">
             <option value="">{{ categories.length ? 'Alle Kategorien' : 'Lädt…' }}</option>
             <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
           </select>
         </label>
         <label class="block text-sm">
           <span class="text-slate-400">Unterkategorie</span>
-          <select v-model="subCategory" class="input" :disabled="!subOptions.length">
+          <select v-model="subCategory" class="input" :disabled="!subOptions.length" @change="applyCategoryToForm">
             <option value="">{{ mainCategory ? 'Gesamte Kategorie' : '–' }}</option>
             <option v-for="s in subOptions" :key="s.id" :value="s.id">{{ s.name }}</option>
           </select>
