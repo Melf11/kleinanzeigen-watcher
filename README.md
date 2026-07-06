@@ -77,7 +77,9 @@ docker compose down -v   # entfernt auch das Postgres-Volume
 
 Automatisiert über **GitHub Actions**: ein Git-Tag `vX.Y.Z` baut das Docker-Image,
 pusht es nach **GHCR** und deployt per SSH auf den Server. Dort läuft der Stack aus
-**Caddy (Auto-HTTPS) → App → PostgreSQL** (`docker-compose.prod.yml`).
+**App + PostgreSQL** (`docker-compose.prod.yml`); TLS und Routing übernimmt der
+zentrale Caddy-Proxy ([web-caddy](https://github.com/Melf11/web-caddy)) über das
+externe Docker-Netz `proxy` (Upstream-Alias: `kleinanzeigen-app`).
 
 ### Einmalige Server-Vorbereitung (Debian)
 ```bash
@@ -88,17 +90,21 @@ curl -fsSL https://get.docker.com | sh
 sudo mkdir -p /opt/kleinanzeigen-watcher && sudo chown "$USER" /opt/kleinanzeigen-watcher
 cd /opt/kleinanzeigen-watcher
 
-# 3) .env anlegen (Vorlage aus dem Repo: .env.prod.example) und Werte setzen
-#    DOMAIN, ACME_EMAIL, NUXT_SESSION_PASSWORD (openssl rand -base64 48),
+# 3) Gemeinsames Proxy-Netz + zentraler Caddy (einmalig, siehe web-caddy-Repo)
+docker network create proxy
+
+# 4) .env anlegen (Vorlage aus dem Repo: .env.prod.example) und Werte setzen
+#    NUXT_SESSION_PASSWORD (openssl rand -base64 48),
 #    NUXT_AUTH_PASSWORD, POSTGRES_PASSWORD …
 nano .env
 
-# 4) SSH-Key der Pipeline erlauben (siehe unten) und Ports 80/443 freigeben
-sudo ufw allow 80,443/tcp   # falls ufw aktiv
+# 5) SSH-Key der Pipeline erlauben (siehe unten); Ports 80/443 gibt der
+#    zentrale Caddy-Proxy frei (web-caddy)
 ```
-- **DNS:** A-Record von `DOMAIN` auf die Server-IP zeigen lassen (für Let's Encrypt).
-- `docker-compose.prod.yml` und `Caddyfile` müssen **nicht** manuell kopiert werden — die
-  Pipeline lädt sie bei jedem Deploy per `scp` aktuell hoch.
+- **DNS:** A-Record der Subdomain auf die Server-IP zeigen lassen (für Let's Encrypt).
+- `docker-compose.prod.yml` muss **nicht** manuell kopiert werden — die
+  Pipeline lädt sie bei jedem Deploy per `scp` aktuell hoch. Das `Caddyfile`
+  lebt im web-caddy-Repo.
 
 ### SSH-Deploy-Key
 ```bash

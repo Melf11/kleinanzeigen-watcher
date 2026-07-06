@@ -75,7 +75,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Keep the server's compose file + Caddyfile in sync with the repo.
+      # Keep the server's compose file in sync with the repo.
+      # (TLS/routing lives in the shared web-caddy repo.)
       - name: Copy compose files to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -83,7 +84,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
-          source: 'docker-compose.prod.yml,Caddyfile'
+          source: 'docker-compose.prod.yml'
           target: ${{ secrets.DEPLOY_PATH }}
 
       - name: Pull image & restart stack
@@ -106,6 +107,6 @@ jobs:
             fi
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
             docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker logout ghcr.io
             docker image prune -f

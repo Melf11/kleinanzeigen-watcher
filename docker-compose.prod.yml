@@ -1,4 +1,6 @@
-# Production stack for the Debian vServer: Caddy (auto-HTTPS) → App → Postgres.
+# Production stack for the Debian vServer: App + Postgres.
+# TLS/routing is handled by the shared Caddy proxy (repo: web-caddy) via the
+# external docker network "proxy" (create once: docker network create proxy).
 # Deployed by the GitHub Actions pipeline (.github/workflows/deploy.yml).
 # Secrets/config live in a ".env" file next to this one (see .env.prod.example).
 
@@ -47,24 +49,14 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    networks:
+      default:
+      proxy:
+        aliases: [kleinanzeigen-app]
 
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    depends_on:
-      - app
-    ports:
-      - '80:80'
-      - '443:443'
-    environment:
-      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
-      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
+networks:
+  proxy:
+    external: true
 
 volumes:
   pgdata:
-  caddy_data:
-  caddy_config:
